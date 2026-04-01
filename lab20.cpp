@@ -22,7 +22,7 @@ int main(){
 	
 	char eq;	
 	cout << " [1] Sword \n [2] Axes \n [3] Shield \n [4] Armor \n";
-	cout << "Please select your equipment: ";
+	cout << "Please selet your equipment: ";
 	cin >> eq;
 
 	if(eq == '1') hero.equip(&sword);
