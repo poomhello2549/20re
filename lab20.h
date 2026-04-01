@@ -47,13 +47,14 @@ Unit::Unit(string t,string n){
 		hpmax = rand()%20+120;
 		atk = rand()%5+14;
 		def = rand()%3+9;
-	}else if(t == "Monster"){
+	}else{
 		hpmax = rand()%20+250;
 		atk = rand()%5+25;
 		def = rand()%3+5;
 	}
 	hp = hpmax;	
 	guard_on = false;
+	dodge_on = false;
 	equipment = NULL;
 }
 
@@ -63,8 +64,7 @@ void Unit::showStatus(){
 		cout << name << "\n"; 
 		cout << "HP: " << hp << "/" << hpmax << "\tATK: "<< atk << "\t\tDEF: "<< def;		
 		cout << "\n---------------------------------------\n";
-	}	
-	else if(type == "Monster"){
+	}else{
 		cout << "\t\t\t\t---------------------------------------\n"; 
 		cout << "\t\t\t\t" << name << "\n"; 
 		cout << "\t\t\t\tHP: " << hp << "\t\tATK: "<< atk << "\t\tDEF: "<< def;
@@ -72,19 +72,63 @@ void Unit::showStatus(){
 	}
 }
 
+Equipment::Equipment(int ihp,int iatk,int idef){
+	hpmax = ihp;
+	atk = iatk;
+	def = idef;
+}
+
+vector<int> Equipment::getStat(){
+	vector<int> stat;
+	stat.push_back(hpmax);
+	stat.push_back(atk);
+	stat.push_back(def);
+	return stat;
+}
+
+void Unit::equip(Equipment *item){
+	if(equipment != NULL){
+		vector<int> oldstat = equipment->getStat();
+		hpmax -= oldstat[0];
+		atk -= oldstat[1];
+		def -= oldstat[2];
+	}
+
+	equipment = item;
+
+	vector<int> newstat = item->getStat();
+	hpmax += newstat[0];
+	atk += newstat[1];
+	def += newstat[2];
+
+	if(hp > hpmax){
+		hp = hpmax;
+	}
+}
+
 void Unit::newTurn(){
 	guard_on = false; 
+	dodge_on = false;
 }
 
 int Unit::beAttacked(int oppatk){
-	int dmg;
+	int dmg = 0;
 	if(oppatk > def){
-		dmg = oppatk-def;	
-		if(guard_on) dmg = dmg/3;
-	}	
-	hp -= dmg;
-	if(hp <= 0){hp = 0;}
+		dmg = oppatk - def;	
+		if(guard_on) dmg /= 3;
+	}
 	
+	if(dodge_on){
+		if(rand()%2){
+			dmg = 0;
+		}else{
+			dmg *= 2;
+		}
+	}
+
+	hp -= dmg;
+	if(hp < 0) hp = 0;
+
 	return dmg;	
 }
 
@@ -95,7 +139,7 @@ int Unit::attack(Unit &opp){
 int Unit::heal(){
 	int h = rand()%21 + 10;
 	if(hp + h > hpmax) h = hpmax - hp;
-	hp = hp + h;
+	hp += h;
 	return h;
 }
 
@@ -104,43 +148,50 @@ void Unit::guard(){
 }	
 
 bool Unit::isDead(){
-	if(hp <= 0) return true;
-	else return false;
+	return hp <= 0;
+}
+
+int Unit::ultimateAttack(Unit &opp){
+    return opp.beAttacked(2 * atk);
+}
+
+void Unit::dodge(){
+    dodge_on = true;
 }
 
 void drawScene(char p_action,int p,char m_action,int m){
 	cout << "                                                       \n";
 	if(p_action == 'A'){
-	cout << "                                       "<< -p <<"\n";
+		cout << "                                       "<< -p <<"\n";
 	}else{
-	cout << "                                                       \n";	
+		cout << "                                                       \n";	
 	}	
 	cout << "                                *               *      \n";
 	cout << "                                **  *********  **      \n";
 	cout << "                                ****         ****      \n";
 	if(m_action == 'A'){
-	cout << "                 " << setw(5) << -m << "           *** **   ** ***       Attack!\n";
+		cout << "                 " << setw(5) << -m << "           *** **   ** ***       Attack!\n";
 	}else if(m_action == 'G'){
-	cout << "                                 *** **   ** ***       Guard!\n";
+		cout << "                                 *** **   ** ***       Guard!\n";
 	}else if(m_action == 'D'){
-	cout << "                                 *** **   ** ***       Dodge!\n";
+		cout << "                                 *** **   ** ***       Dodge!\n";
 	}else if(m_action == 'U'){
-	cout << "                 " << setw(5) << -m << "           *** **   ** ***       Ultimate Attack!\n";
+		cout << "                 " << setw(5) << -m << "           *** **   ** ***       Ultimate Attack!\n";
 	}else{
-	cout << "                                 *** **   ** ***       \n";	
+		cout << "                                 *** **   ** ***       \n";	
 	}
 	cout << "                                  ** **   ** **        \n";
 	cout << "                   ***             *         *         \n";
 	if(p_action == 'A'){
-	cout << "        Attack!    ***  *           *********          \n";		
+		cout << "        Attack!    ***  *           *********          \n";		
 	}else if(p_action == 'H'){
-	cout << "      Heal! +" << setw(2) << p << "    ***  *           *********          \n";
+		cout << "      Heal! +" << setw(2) << p << "    ***  *           *********          \n";
 	}else if(p_action == 'G'){
-	cout << "         Guard!    ***  *           *********          \n";
+		cout << "         Guard!    ***  *           *********          \n";
 	}else if(p_action == 'D'){
-	cout << "         Dodge!    ***  *           *********          \n";
+		cout << "         Dodge!    ***  *           *********          \n";
 	}else{
-	cout << "                   ***  *           *********          \n";	
+		cout << "                   ***  *           *********          \n";	
 	}
 	cout << "                    *  *       ***  *  *  *            \n";
 	cout << "                  *****           **   *   *           \n";
@@ -148,8 +199,7 @@ void drawScene(char p_action,int p,char m_action,int m){
 	cout << "                   * *               **        *       \n";
 	cout << "                  *   *                                \n";
 	cout << "                                                       \n";
-};
-
+}
 
 void playerWin(){	
 	cout << "*******************************************************\n";
@@ -157,8 +207,7 @@ void playerWin(){
 	cout << "*                   YOU WIN!!!                        *\n";
 	for(int i = 0; i < 3; i++) cout << "*                                                     *\n";
 	cout << "*******************************************************\n";
-};
-
+}
 
 void playerLose(){
 	cout << "*******************************************************\n";
@@ -166,5 +215,4 @@ void playerLose(){
 	cout << "*                   YOU LOSE!!!                       *\n";
 	cout << "*                                                     *\n";
 	cout << "*******************************************************\n";
-};
-
+}
